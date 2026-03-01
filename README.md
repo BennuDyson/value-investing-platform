@@ -93,23 +93,6 @@ curl "http://127.0.0.1:8000/health"
 curl "http://127.0.0.1:8000/screen/undervalued?tickers=AAPL&tickers=MSFT"
 ```
 
-
-## Troubleshooting
-
-### `ImportError: Import lxml failed` when calling `/tickers/{ticker}/snapshot`
-
-Some `yfinance` fields (for example `earnings_dates`) rely on HTML parsing via `pandas.read_html`, which needs `lxml`.
-
-Fix:
-
-```bash
-pip install lxml
-```
-
-Then restart Uvicorn.
-
-The API now degrades gracefully for optional upstream failures and returns partial data instead of a 500 error.
-
 ## Suggested next steps
 
 1. Add caching (Redis/Postgres) so automation doesn't repeatedly hit Yahoo.

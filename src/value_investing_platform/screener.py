@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
+
 
 
 @dataclass
@@ -20,65 +21,44 @@ class TickerSnapshot:
 class YFinanceGateway:
     """Thin wrapper that gathers most yfinance endpoints in one place."""
 
-    @staticmethod
-    def _safe(getter: Callable[[], Any], default: Any) -> Any:
-        try:
-            value = getter()
-        except Exception:
-            return default
-        return default if value is None else value
-
     def get_snapshot(self, ticker: str, intraday_interval: str = "1h") -> TickerSnapshot:
         import yfinance as yf
 
         obj = yf.Ticker(ticker)
 
-        profile = self._safe(lambda: obj.info, {})
-        prices_daily = self._safe(
-            lambda: obj.history(period="1y", interval="1d").reset_index().to_dict("records"),
-            [],
-        )
-        prices_intraday = self._safe(
-            lambda: obj.history(period="7d", interval=intraday_interval).reset_index().to_dict("records"),
-            [],
-        )
+        profile = obj.info or {}
+        prices_daily = obj.history(period="1y", interval="1d").reset_index().to_dict("records")
+        prices_intraday = obj.history(period="7d", interval=intraday_interval).reset_index().to_dict("records")
 
         financials = {
-            "income_statement_yearly": self._safe(lambda: obj.income_stmt.to_dict(), {}),
-            "income_statement_quarterly": self._safe(lambda: obj.quarterly_income_stmt.to_dict(), {}),
-            "balance_sheet_quarterly": self._safe(lambda: obj.get_balance_sheet(freq="quarterly").to_dict(), {}),
-            "cash_flow_yearly": self._safe(lambda: obj.cashflow.to_dict(), {}),
-            "cash_flow_quarterly": self._safe(lambda: obj.quarterly_cashflow.to_dict(), {}),
+            "income_statement_yearly": obj.income_stmt.to_dict() if obj.income_stmt is not None else {},
+            "income_statement_quarterly": obj.quarterly_income_stmt.to_dict() if obj.quarterly_income_stmt is not None else {},
+            "balance_sheet_quarterly": obj.get_balance_sheet(freq="quarterly").to_dict(),
+            "cash_flow_yearly": obj.cashflow.to_dict() if obj.cashflow is not None else {},
+            "cash_flow_quarterly": obj.quarterly_cashflow.to_dict() if obj.quarterly_cashflow is not None else {},
         }
 
         events = {
-            "earnings_dates": self._safe(lambda: obj.earnings_dates.reset_index().to_dict("records"), []),
-            "calendar": self._safe(
-                lambda: obj.calendar.to_dict() if hasattr(obj.calendar, "to_dict") else obj.calendar,
-                {},
-            ),
-            "dividends": self._safe(lambda: obj.dividends.reset_index().to_dict("records"), []),
+            "earnings_dates": obj.earnings_dates.reset_index().to_dict("records") if obj.earnings_dates is not None else [],
+            "calendar": obj.calendar.to_dict() if hasattr(obj.calendar, "to_dict") else (obj.calendar or {}),
+            "dividends": obj.dividends.reset_index().to_dict("records") if obj.dividends is not None else [],
         }
 
-        recommendations = self._safe(lambda: obj.get_recommendations(), None)
-
         analyst = {
-            "recommendations": []
-            if recommendations is None
-            else self._safe(lambda: recommendations.reset_index().to_dict("records"), []),
-            "price_targets": self._safe(lambda: obj.get_analyst_price_targets(), {}),
-            "earnings_estimate": self._safe(lambda: obj.earnings_estimate.to_dict(), {}),
-            "revenue_estimate": self._safe(lambda: obj.revenue_estimate.to_dict(), {}),
-            "eps_trend": self._safe(lambda: obj.eps_trend.to_dict(), {}),
-            "growth_estimates": self._safe(lambda: obj.growth_estimates.to_dict(), {}),
+            "recommendations": obj.get_recommendations().reset_index().to_dict("records") if obj.get_recommendations() is not None else [],
+            "price_targets": obj.get_analyst_price_targets() or {},
+            "earnings_estimate": obj.earnings_estimate.to_dict() if obj.earnings_estimate is not None else {},
+            "revenue_estimate": obj.revenue_estimate.to_dict() if obj.revenue_estimate is not None else {},
+            "eps_trend": obj.eps_trend.to_dict() if obj.eps_trend is not None else {},
+            "growth_estimates": obj.growth_estimates.to_dict() if obj.growth_estimates is not None else {},
         }
 
         insider = {
-            "purchases": self._safe(lambda: obj.insider_purchases.to_dict(), {}),
-            "transactions": self._safe(lambda: obj.insider_transactions.to_dict(), {}),
+            "purchases": obj.insider_purchases.to_dict() if obj.insider_purchases is not None else {},
+            "transactions": obj.insider_transactions.to_dict() if obj.insider_transactions is not None else {},
         }
 
-        news = self._safe(lambda: obj.news, [])
+        news = obj.news or []
 
         return TickerSnapshot(
             ticker=ticker,
@@ -107,8 +87,7 @@ class ValueScoreEngine:
             "strong_roe": self._above(profile.get("returnOnEquity"), threshold=0.12),
             "low_debt": self._between(profile.get("debtToEquity"), low=0, high=80),
             "cash_generation": self._above(profile.get("freeCashflow"), threshold=0),
-            "dividend_or_buyback_signal": bool(profile.get("dividendRate") or 0)
-            or bool(profile.get("dividendYield") or 0),
+            "dividend_or_buyback_signal": bool(profile.get("dividendRate") or 0) or bool(profile.get("dividendYield") or 0),
         }
 
         passed = sum(1 for ok in checks.values() if ok)
@@ -158,3 +137,4 @@ def screen_undervalued(tickers: Iterable[str]) -> List[Dict[str, Any]]:
         )
 
     return sorted(results, key=lambda x: x["value_score"], reverse=True)
+
