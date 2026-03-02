@@ -4,21 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "value-investing-platform"
-version = "0.1.0"
-description = "Starter API for value-investing data and undervalued stock screening"
+version = "1.0.0"
+description = "Production-ready value investing analytics platform"
 requires-python = ">=3.10"
-dependencies = [
-  "fastapi>=0.112.0",
-  "uvicorn>=0.30.0",
-  "pandas>=2.2.0",
-  "yfinance>=0.2.0",
-]
-
-[tool.setuptools]
-package-dir = {"" = "src"}
-
-[tool.setuptools.packages.find]
-where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
