@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Value Investing Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar card">
+        <h1>Value Investing Dashboard</h1>
+        <div class="controls">
+          <label for="tickerInput" class="sr-only">Ticker</label>
+          <input id="tickerInput" type="text" placeholder="Enter ticker (e.g. AAPL)" maxlength="10" />
+          <select id="tickerExamples" aria-label="Example tickers">
+            <option value="">Examples</option>
+            <option value="AAPL">AAPL</option>
+            <option value="MSFT">MSFT</option>
+            <option value="GOOGL">GOOGL</option>
+            <option value="TSLA">TSLA</option>
+          </select>
+          <button id="searchBtn" type="button">Search</button>
+        </div>
+      </header>
+
+      <section class="status card">
+        <p id="statusText">Search for a ticker to load data.</p>
+        <p id="lastUpdated">Last updated: —</p>
+        <p id="errorText" class="error hidden"></p>
+      </section>
+
+      <section class="card hidden" id="resultsSection">
+        <div id="tabs" class="tabs" role="tablist" aria-label="Datasets"></div>
+        <div id="panelTitle" class="panel-title"></div>
+        <div id="panelContent"></div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
