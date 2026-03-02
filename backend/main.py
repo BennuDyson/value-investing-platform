@@ -7,10 +7,22 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Value Investing Platform API")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ... rest of your code continues here ...
 CACHE_TTL_SECONDS = 60
 _cache: dict[str, tuple[datetime, dict[str, Any]]] = {}
 
@@ -65,13 +77,6 @@ def _serialize_generic(value: Any) -> Any:
     if isinstance(value, (list, tuple)):
         return [_serialize_generic(v) for v in value]
     return _clean_scalar(value)
-
-
-def _error_response(status_code: int, message: str, details: str) -> JSONResponse:
-    return JSONResponse(
-        status_code=status_code,
-        content={"error": {"message": message, "details": details}},
-    )
 
 
 def _get_cached(symbol: str) -> dict[str, Any] | None:

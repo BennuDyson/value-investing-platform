@@ -4,7 +4,7 @@
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate
+.venv\Scripts\Activate
 pip install -r backend/requirements.txt
 ```
 

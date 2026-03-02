@@ -104,3 +104,39 @@ a { color: #1d4ed8; }
   input { min-width: 150px; flex: 1; }
   table { min-width: 520px; }
 }
+
+/* News table helpers (renderNews) */
+.tableWrap { /* matches renderNews wrapper */
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.tbl { /* matches renderNews table */
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+
+.tbl th, .tbl td {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.5rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.tbl thead th {
+  position: sticky;
+  top: 0;
+  background: #f9fafb;
+  z-index: 1;
+}
+
+.tbl tbody tr:nth-child(even) { background: #f9fafb; }
+
+.muted { opacity: 0.7; }
+
+.empty {
+  padding: 0.75rem;
+  opacity: 0.85;
+}

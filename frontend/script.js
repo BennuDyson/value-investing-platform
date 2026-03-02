@@ -102,6 +102,9 @@ function renderActiveDataset() {
   els.panelTitle.textContent = `${activeDataset} · Last updated ${formatDate(lastResponse?.timestamp)}`;
   els.panelContent.innerHTML = "";
 
+  if (activeDataset === "news") {els.panelContent.appendChild(renderNews(value));
+    return;
+  }
   if (isEmpty(value)) return renderMessage("No data available");
   if (isDataFrameLike(value)) return renderTable(["Index", ...value.columns], value.data.map((row, i) => [value.index?.[i], ...row]));
   if (isSeriesLike(value)) return renderTable(["Index", "Value"], value.index.map((idx, i) => [idx, value.data[i]]));
@@ -194,4 +197,96 @@ function formatDate(value) {
   const asNum = typeof value === "number" ? value * 1000 : value;
   const dt = new Date(asNum);
   return Number.isNaN(dt.getTime()) ? String(value) : dt.toLocaleString();
+}
+
+function formatUnixSeconds(sec) {
+  if (!sec || typeof sec !== "number") return "";
+  return new Date(sec * 1000).toLocaleString();
+}
+
+function safeText(v) {
+  if (v === null || v === undefined) return "";
+  if (typeof v === "string") return v;
+  return String(v);
+}
+
+function el(tag, attrs = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === "className") node.className = v;
+    else node.setAttribute(k, v);
+  }
+  for (const child of children) {
+    if (child == null) continue;
+    node.appendChild(typeof child === "string" ? document.createTextNode(child) : child);
+  }
+  return node;
+}
+
+function renderNews(dataset) {
+  // dataset is usually an array like: [{id: "...", content: {...}}, ...]
+  if (!Array.isArray(dataset) || dataset.length === 0) {
+    return el("div", { className: "empty" }, "No news available");
+  }
+
+  // Normalize each item so we have flat fields to show
+  const rows = dataset.map((item) => {
+    const c = (item && item.content && typeof item.content === "object") ? item.content : item;
+
+    const title = c.title || c.headline || "";
+    const publisher =
+      c.publisher ||
+      c.provider?.displayName ||
+      c.provider?.name ||
+      c.source ||
+      "";
+    const published =
+      c.providerPublishTime ? formatUnixSeconds(c.providerPublishTime)
+      : (c.pubDate ? safeText(c.pubDate) : "");
+    const link =
+      c.canonicalUrl?.url ||
+      c.clickThroughUrl?.url ||
+      c.link ||
+      c.url ||
+      c.originalUrl ||
+      "";
+
+    // optional “summary-like” field
+    const summary = c.summary || c.description || "";
+
+    return { title, publisher, published, link, summary };
+  });
+
+  // Build table
+  const table = el("table", { className: "tbl" });
+  const thead = el("thead", {}, el("tr", {},
+    el("th", {}, "Title"),
+    el("th", {}, "Publisher"),
+    el("th", {}, "Published"),
+    el("th", {}, "Link"),
+    el("th", {}, "Summary")
+  ));
+  table.appendChild(thead);
+
+  const tbody = el("tbody");
+  rows.forEach((r) => {
+    const linkCell = r.link
+      ? el("a", { href: r.link, target: "_blank", rel: "noopener noreferrer" }, "Open")
+      : el("span", { className: "muted" }, "");
+
+    tbody.appendChild(
+      el("tr", {},
+        el("td", {}, safeText(r.title)),
+        el("td", {}, safeText(r.publisher)),
+        el("td", {}, safeText(r.published)),
+        el("td", {}, linkCell),
+        el("td", {}, safeText(r.summary))
+      )
+    );
+  });
+
+  table.appendChild(tbody);
+
+  // Wrap for horizontal scroll
+  return el("div", { className: "tableWrap" }, table);
 }
