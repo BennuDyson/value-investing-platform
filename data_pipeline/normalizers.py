@@ -10,32 +10,16 @@ import pandas as pd
 def to_tidy_statement(
     ticker: str,
     statement_name: str,
-    frame: pd.DataFrame | pd.Series | None,
+    frame: pd.DataFrame,
     frequency: str,
 ) -> pd.DataFrame:
-    """Convert yfinance financial statement payloads into tidy format.
-
-    yfinance responses are usually DataFrames, but can occasionally come back
-    as Series-shaped structures for sparse statements. This function normalizes
-    both into a DataFrame before melting.
-    """
-    if frame is None:
+    """Convert wide yfinance financial statement into tidy format."""
+    if frame is None or frame.empty:
         return pd.DataFrame(columns=["ticker", "statement", "line_item", "period", "frequency", "value"])
 
-    if isinstance(frame, pd.Series):
-        # Series index usually represents line items; name may represent period.
-        series_name = frame.name if frame.name is not None else "unknown_period"
-        working = frame.to_frame(name=series_name)
-    elif isinstance(frame, pd.DataFrame):
-        working = frame.copy()
-    else:
-        working = pd.DataFrame(frame)
-
-    if working.empty:
-        return pd.DataFrame(columns=["ticker", "statement", "line_item", "period", "frequency", "value"])
-
-    working.index = working.index.astype(str)
-    tidy = working.reset_index().rename(columns={"index": "line_item"})
+    tidy = frame.copy()
+    tidy.index = tidy.index.astype(str)
+    tidy = tidy.reset_index().rename(columns={"index": "line_item"})
     tidy = tidy.melt(id_vars=["line_item"], var_name="period", value_name="value")
     tidy["period"] = pd.to_datetime(tidy["period"], errors="coerce").dt.date
     tidy["ticker"] = ticker
