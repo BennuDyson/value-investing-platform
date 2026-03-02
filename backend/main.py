@@ -95,8 +95,8 @@ def health() -> dict[str, str]:
     return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
 
 
-@app.get("/api/ticker/{symbol}/all", response_model=None)
-def ticker_all(symbol: str) -> Any:
+@app.get("/api/ticker/{symbol}/all")
+def ticker_all(symbol: str) -> dict[str, Any] | JSONResponse:
     normalized_symbol = symbol.strip().upper()
     if not normalized_symbol:
         return _error_response(400, "Invalid symbol", "Ticker symbol is required.")
