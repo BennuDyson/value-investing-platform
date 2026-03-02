@@ -96,10 +96,13 @@ def health() -> dict[str, str]:
 
 
 @app.get("/api/ticker/{symbol}/all", response_model=None)
-def ticker_all(symbol: str) -> Any:
+def ticker_all(symbol: str) -> dict[str, Any]:
     normalized_symbol = symbol.strip().upper()
     if not normalized_symbol:
-        return _error_response(400, "Invalid symbol", "Ticker symbol is required.")
+        raise HTTPException(
+            status_code=400,
+            detail={"error": {"message": "Invalid symbol", "details": "Ticker symbol is required."}},
+        )
 
     cached = _get_cached(normalized_symbol)
     if cached:
@@ -139,9 +142,14 @@ def ticker_all(symbol: str) -> Any:
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "data": {key: _serialize_generic(value) for key, value in datasets.items()},
         }
+
         _set_cache(normalized_symbol, payload)
         return payload
-    except HTTPException as exc:
-        return _error_response(exc.status_code, "Request failed", str(exc.detail))
+
+    except HTTPException:
+        raise
     except Exception as exc:  # noqa: BLE001
-        return _error_response(502, "Failed to fetch ticker data", str(exc))
+        raise HTTPException(
+            status_code=502,
+            detail={"error": {"message": "Failed to fetch ticker data", "details": str(exc)}},
+        )
